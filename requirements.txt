@@ -1,0 +1,8 @@
+langchain>=1.0
+langgraph>=1.0
+langchain-google-genai>=3.0   # Gemini (MODEL=google_genai:...). Swap for langchain-openai / langchain-anthropic if needed
+pypdf>=4.0                    # resume PDF text extraction
+pydantic>=2.7
+python-dotenv>=1.0
+streamlit>=1.35      # only for the web UI (app.py)
+pytest>=8.0          # only for tests
