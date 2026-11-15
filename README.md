@@ -1,11 +1,13 @@
 # AI Mock Interview Agent
-<img width="1910" height="1042" alt="Screenshot 2026-11-15 150017" src="https://github.com/user-attachments/assets/3ce1eb99-747e-4b9d-8fe0-f9f394a61ed4" />
+An agentic AI interview coach built with **LangChain** and **LangGraph**. Give it a **job description**, your **resume**, or both. It plans an interview for that exact role, asks questions in the style that suits the profession (technical, behavioral, situational or case), scores every answer, coaches you right away, adapts as you go, and finishes with a detailed report that includes how well you fit the role.
+
+
+<img width="1910" height="1042" alt="Running app screenshot" src="https://github.com/user-attachments/assets/3ce1eb99-747e-4b9d-8fe0-f9f394a61ed4" />
 
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![LangChain](https://img.shields.io/badge/LangChain-1.x-green)
 ![LangGraph](https://img.shields.io/badge/LangGraph-1.x-orange)
 
-An agentic AI interview coach built with **LangChain** and **LangGraph**. Give it a **job description**, your **resume**, or both. It plans an interview for that exact role, asks questions in the style that suits the profession (technical, behavioral, situational or case), scores every answer, coaches you right away, adapts as you go, and finishes with a detailed report that includes how well you fit the role.
 
 It works for **any profession**, not only software roles.
 
