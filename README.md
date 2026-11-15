@@ -1,11 +1,32 @@
-# AI Mock Interview Agent (any role, built from your resume and a job description)
+# AI Mock Interview Agent
+<img width="1910" height="1042" alt="Screenshot 2026-11-15 150017" src="https://github.com/user-attachments/assets/3ce1eb99-747e-4b9d-8fe0-f9f394a61ed4" />
 
-An agentic interview coach built with **LangChain** and **LangGraph**. Give it a job description, a resume,
-or both. It plans an interview for that exact role, asks technical, behavioral, situational or case questions
-(whatever suits the profession), scores each answer, coaches you instantly, adapts as you go, and ends with a
-detailed report including how well you fit the role. It is not limited to Python or to tech roles.
+![Python](https://img.shields.io/badge/python-3.10%2B-blue)
+![LangChain](https://img.shields.io/badge/LangChain-1.x-green)
+![LangGraph](https://img.shields.io/badge/LangGraph-1.x-orange)
 
-## Architecture (LangGraph state machine, 13 nodes)
+An agentic AI interview coach built with **LangChain** and **LangGraph**. Give it a **job description**, your **resume**, or both. It plans an interview for that exact role, asks questions in the style that suits the profession (technical, behavioral, situational or case), scores every answer, coaches you right away, adapts as you go, and finishes with a detailed report that includes how well you fit the role.
+
+It works for **any profession**, not only software roles.
+
+
+## Features
+
+- **Job Description mode:** paste or upload a job posting; questions are built around its requirements and responsibilities.
+- **Resume-aware:** extracts your skills and experience, verifies your strongest claims, probes gaps against the job, and asks deep-dive questions about your own projects or roles.
+- **Any role, right style of question:** technical for hands-on skills, behavioral (STAR) for past experience, situational for hypothetical scenarios, and case questions for structured problem-solving.
+- **Adaptive:** weak answers earn one targeted follow-up; strong answers raise the difficulty; struggling candidates get easier questions.
+- **No fixed question count:** the interview ends when everything planned is covered, or when you choose to end it.
+- **Instant coaching:** after every answer you get a score, specific feedback, one improvement tip and a model answer.
+- **Final report:** overall score, per-topic breakdown, strengths, improvements, a study plan, a role-fit summary and a question-by-question review, saved as Markdown.
+- **Remembers you:** keeps per-topic scores across sessions so the planner can revisit weak areas.
+- **Two interfaces:** Streamlit web app and a terminal CLI.
+- **Works with several model providers** through LangChain (Gemini by default; OpenAI, Anthropic and others are a one-line change).
+
+
+## How it works
+
+The interview is a LangGraph state machine. Language tasks go to the LLM; control logic (scoring math, difficulty changes, follow-up rules, stopping) is plain, tested Python.
 
 ```mermaid
 flowchart TD
@@ -29,83 +50,159 @@ flowchart TD
 
 | Node | What it does |
 |---|---|
-| Interview Configuration | Validates input (needs a role, job description, resume or focus topics); loads the candidate's saved profile |
-| Resume Analysis | Extracts skills and experiences (facts only, injection-guarded). Skipped without a resume |
-| Job Analysis | **Job Description mode:** extracts title, seniority, requirements, responsibilities. Skipped without a JD |
-| Interview Planner | LLM picks the topics and their style (technical, behavioral, situational, case): job requirements first, then your focus topics, resume gaps, strongest claims and past weak areas. Infers level if set to auto |
-| Interview Agent | Interviewer persona for the role; takes the first agenda item |
-| Generate Question | Structured-output LLM call; the plan (not the LLM) controls topic, difficulty, style |
-| Candidate Answer | `interrupt()` pauses the graph until the human answers |
-| Answer Evaluator | LLM judge with a rubric that changes by style (e.g. STAR specificity for behavioral); injection guard |
+| Interview Configuration | Validates input (needs a role, job description, resume or focus topics) and loads the candidate's saved profile |
+| Resume Analysis | Extracts skills and experiences (facts only). Skipped without a resume |
+| Job Analysis | Extracts title, seniority, requirements and responsibilities. Skipped without a job description |
+| Interview Planner | Chooses topics and their style from the job requirements, your focus topics, resume gaps, strongest claims and past weak areas; infers level when set to auto |
+| Interview Agent | Sets the interviewer persona for the role and takes the first item from the agenda |
+| Generate Question | Structured-output LLM call; the plan controls topic, difficulty and style |
+| Candidate Answer | Pauses the graph with `interrupt()` until the candidate answers (`/skip` and `/quit` supported) |
+| Answer Evaluator | LLM judge with a rubric that changes by question style |
 | Structured Evaluation | Deterministic score: 0.5 correctness + 0.3 depth + 0.2 clarity |
-| Feedback Generator | Specific feedback, one tip, model answer (STAR outline for behavioral) |
-| Interview Memory | Appends each turn to state (reducer); skill profile saved at the end |
+| Feedback Generator | Specific feedback, one tip, and a model answer (a STAR outline for behavioral questions) |
+| Interview Memory | Appends each turn to the graph state; the skill profile is saved at the end |
 | Interview Complete? | Done when the agenda is covered and no follow-up is pending |
-| Adaptive Question Selection | One follow-up on weak answers; harder when strong, easier when struggling |
-| Final Interview Report | Stats in code + LLM narrative incl. "Fit for the role", saved as Markdown |
+| Adaptive Question Selection | One follow-up on weak answers; adjusts difficulty; otherwise the next agenda item |
+| Final Interview Report | Statistics in code plus an LLM-written narrative, saved as Markdown |
+
+## Tech stack
+
+- **LangChain 1.x:** model interface, structured output (`with_structured_output`), retries
+- **LangGraph 1.x:** state graph, conditional edges, `interrupt()` for human-in-the-loop, checkpointing
+- **Pydantic v2:** typed schemas for every LLM call and node output
+- **Streamlit:** web interface
+- **pypdf:** resume and job description PDF text extraction
+- **pytest:** offline test suite with a fake model
+- **LangSmith (optional):** tracing and observability
 
 ## Quick start
 
-```bash
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env            # add your key (Gemini by default) and MODEL
-streamlit run app.py            # web UI: paste/upload a job description, upload a resume
+### 1. Clone and install
 
-# terminal examples
-python -m interview_agent.cli --name Asha --jd job.txt --resume resume.pdf
-python -m interview_agent.cli --role "Marketing Manager" --focus "campaign analytics" "stakeholder management"
-pytest                          # offline tests, no key needed
+**Windows (PowerShell)**
+```powershell
+git clone https://github.com/Samcoderg78/AI-mock-interview-agent.git
+cd AI-mock-interview-agent
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+copy .env.example .env
 ```
 
-No API key? `MOCK_LLM=1` runs the whole workflow with a deterministic fake model (used by the tests).
+**macOS / Linux**
+```bash
+git clone https://github.com/Samcoderg78/AI-mock-interview-agent.git
+cd AI-mock-interview-agent
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+```
 
-## How it decides what to ask and when to stop
+### 2. Add your API key
 
-- **What:** the planner combines the job's requirements, your resume (verifying strengths, probing gaps) and any
-  focus topics you typed. Up to two **deep-dive questions about your own experience** are woven in.
-- **How:** each topic has a style. Engineering roles get mostly technical questions; management or sales roles get
-  more behavioral, situational and case questions.
-- **When to stop:** there is no question-count setting. The interview ends when the planned agenda is covered
-  (plus any follow-ups), or when you press *End interview*. Internal caps (6 topics, 20 questions total) only
-  protect against runaway cost.
+Open `.env` and set your key. The default is Google Gemini:
+
+```
+MODEL=google_genai:gemini-2.5-flash
+GOOGLE_API_KEY=your-key-here
+```
+
+To use another provider, change `MODEL` (format `provider:model`), set that provider's key, and install its package, for example `pip install langchain-openai` with `MODEL=openai:gpt-4o-mini` and `OPENAI_API_KEY=...`. Model names change over time, so check your provider's docs for the current one.
+
+### 3. Run it
+
+**Web app**
+```bash
+python -m streamlit run app.py
+```
+
+**Terminal**
+```bash
+# job description + resume
+python -m interview_agent.cli --name Asha --jd job.txt --resume resume.pdf
+
+# role and focus topics only
+python -m interview_agent.cli --role "Marketing Manager" --focus "campaign analytics" "stakeholder management"
+```
+
+During an interview, type `/skip` to skip a question or `/quit` to end the interview and get your report.
+
+**No API key?** Set `MOCK_LLM=1` to run the whole workflow with a deterministic fake model. It is meant for demos of the flow and for tests, not for realistic questions.
+
+## Configuration
+
+| Setting | Where | Description |
+|---|---|---|
+| `MODEL` | `.env` | Model as `provider:model` (default `google_genai:gemini-2.5-flash`) |
+| `GOOGLE_API_KEY` etc. | `.env` | API key for your provider |
+| `MOCK_LLM=1` | `.env` | Use the offline fake model |
+| `MOCK_INTERVIEW_HOME` | `.env` | Folder for saved reports and the candidate profile (default `~/.mock_interviewer`) |
+| `LANGSMITH_TRACING=true` | `.env` | Trace every node and prompt in LangSmith (also set `LANGSMITH_API_KEY`) |
+
+Internal limits (not user settings): at most 6 topics, 2 resume deep-dives, 1 follow-up per topic and 20 questions per interview. They keep cost predictable.
+
+## Project structure
+
+```
+.
+├── app.py                    # Streamlit web interface
+├── interview_agent/
+│   ├── graph.py              # LangGraph wiring (nodes and edges)
+│   ├── nodes.py              # node functions and pure helpers (agenda, follow-ups, difficulty)
+│   ├── prompts.py            # all prompts in one place
+│   ├── schemas.py            # Pydantic models for config, plan, questions, evaluation, report
+│   ├── state.py              # graph state definition
+│   ├── llm.py                # model factory and offline fake model
+│   ├── memory.py             # cross-session candidate profile and report saving
+│   ├── report.py             # statistics and Markdown report rendering
+│   ├── resume.py             # PDF / text extraction
+│   └── cli.py                # terminal interface
+├── tests/test_flow.py        # offline tests (no API key needed)
+├── requirements.txt
+└── .env.example
+```
+
+## Testing
+
+```bash
+pytest -q
+```
+
+The 11 tests run against a fake model, so they need no API key and cost nothing. They cover node order, job-description planning, behavior for non-technical roles, resume deep-dives, follow-ups, difficulty adaptation, `/skip`, `/quit`, the safety caps and cross-session memory. They verify the **workflow**, not the quality of the LLM's questions or scores.
+
+## Design decisions
+
+- **LLM for judgment, code for control.** Score weighting, follow-up rules, difficulty changes, topic merging and stopping are deterministic and unit-tested.
+- **Plan, then execute.** A planner node produces a typed agenda that later nodes follow, which keeps interviews coherent and easy to audit.
+- **Structured output everywhere.** Every LLM call returns a validated Pydantic object, with retries.
+- **Human-in-the-loop.** `interrupt()` plus a checkpointer pauses the graph for each answer; each interview has its own `thread_id`.
+- **Prompt-injection defense.** Answers, resumes and job postings are wrapped in tags and treated strictly as data to analyze, never as instructions.
+- **Coverage-based stopping.** The interview length follows what needs to be covered, with a hard cap for cost safety.
 
 ## Privacy
 
-Resume and job description text are sent to your model provider for analysis. The app does not store them; only
-per-topic score averages go into a local profile (`~/.mock_interviewer/`) plus the Markdown reports.
-Scanned (image-only) PDFs are not supported without OCR.
+Resume and job description text are sent to your chosen model provider for analysis. The app does not store that text. It saves only per-topic score averages (a local profile) and the Markdown reports, in `~/.mock_interviewer/` by default. Do not commit those folders; the included `.gitignore` excludes them.
 
-## Design decisions worth explaining in interviews
+## Limitations
 
-- **LLM for judgment, code for control.** Scoring math, difficulty adaptation, follow-up rules, topic merging and
-  stopping are deterministic and unit-tested; only language tasks go to the model.
-- **Plan, then execute.** A planner node produces a typed agenda; later nodes follow it, which keeps interviews
-  coherent and auditable.
-- **Structured output everywhere** (`with_structured_output` + Pydantic) with retries.
-- **Human-in-the-loop** via `interrupt()` plus a checkpointer; one `thread_id` per interview.
-- **Prompt-injection defense:** answers, resumes and job postings are delimited and treated strictly as data.
-- **Coverage-based termination** instead of an arbitrary question count, with a hard safety cap.
-- **Two memory layers:** graph state (append reducer) and a per-candidate JSON profile.
-- **Testable without an LLM:** fake model plus pure helpers; 11 tests cover flow order, JD mode, any-role behavior,
-  resume deep-dives, follow-ups, difficulty adaptation, `/quit`, `/skip`, caps and memory.
-- **Observability:** set `LANGSMITH_TRACING=true` to trace every node, prompt and score.
+- Scanned (image-only) PDFs are not supported; use a text-based PDF or paste the text.
+- Only the first 12,000 characters of a resume or job description are used.
+- The LLM judge has **not** been validated against human ratings, so treat scores as guidance, not a verdict.
+- The interview state is held in memory, so closing the app mid-interview loses it.
+- Free-tier API limits can slow or interrupt an interview, since each answer triggers several model calls.
+- Tested mainly with English-language input.
 
-## Resume bullets (edit with your real numbers)
+## Roadmap
 
-- Built an agentic mock-interview coach with **LangGraph** (13-node stateful workflow with planning, a
-  human-in-the-loop interrupt, conditional routing and an adaptive loop) and **LangChain** structured-output calls.
-- Designed a plan-then-execute pipeline that turns a job description and resume into a tailored interview
-  (technical, behavioral, situational and case questions) for any profession, with rubric-based scoring and a
-  role-fit report.
-- Added prompt-injection guards, retries, an offline fake-LLM test suite (pytest), LangSmith tracing, and CLI and
-  Streamlit interfaces.
+- [ ] Measure judge-human agreement on a hand-scored set of answers and tune the rubric prompts
+- [ ] Coding questions with a sandboxed test runner for software roles
+- [ ] Persistent checkpointing (SQLite or Postgres) so interviews survive restarts
+- [ ] Voice mode (speech-to-text and text-to-speech)
+- [ ] Progress dashboard with score trends across sessions
+- [ ] Company research tool to tailor questions to the employer
 
-## Ideas to extend it
 
-1. **Evaluate the evaluator:** score 30-50 answers by hand, measure judge-human agreement, tune the rubric prompt.
-2. **Coding sandbox:** run candidate code against tests for software roles.
-3. **Voice mode:** speech-to-text in, text-to-speech out.
-4. **Postgres checkpointer** and a FastAPI backend so interviews survive restarts.
-5. **Progress dashboard:** score trends per topic and style across sessions.
-6. **Company research:** add a web-search tool to tailor questions to the employer.
+## Author
+
+Built by [@Samcoderg78](https://github.com/Samcoderg78).
